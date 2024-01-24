@@ -1,0 +1,19 @@
+{
+    "name": "youtube-transcripts-text-embedding-ada-002",
+    "created_at": "2023-06-01 03-22-14.451204",
+    "documents": 38950,
+    "queries": 0,
+    "source": "youtube",
+    "license": null,
+    "bucket": "pinecone-datasets-dev",
+    "task": "multiple",
+    "dense_model": {
+        "name": "text-embedding-ada-002",
+        "tokenizer": null,
+        "dimension": 1536
+    },
+    "sparse_model": null,
+    "description": null,
+    "tags": null,
+    "args": null
+}
