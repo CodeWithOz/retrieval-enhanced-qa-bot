@@ -1,9 +1,8 @@
 import os
 import datetime
-from time import time
 from pinecone import Pinecone, PodSpec
 from dotenv import load_dotenv
-from pinecone_datasets import load_dataset
+from pinecone_datasets import Dataset
 
 def get_current_timestamp():
     return datetime.datetime.now(tz=datetime.timezone.utc).strftime("%H:%M:%S")
@@ -25,17 +24,9 @@ pinecone_environment = os.getenv("PINECONE_ENVIRONMENT")
 
 
 timed_print(f"loading youtube transcripts dataset")
-dataset = load_dataset("youtube-transcripts-text-embedding-ada-002")
+file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "youtube-transcripts")
+dataset = Dataset.from_path(file_path)
 timed_print(f"loaded youtube transcripts dataset")
-
-
-# drop the sparse values as they are not needed for this example
-timed_print(f"dropping metadata and sparse_values columns")
-dataset.documents.drop(["metadata", "sparse_values"], axis=1, inplace=True)
-timed_print(f"dropped metadata and sparse_values columns")
-timed_print(f"renaming blob column")
-dataset.documents.rename(columns={"blob": "metadata"}, inplace=True)
-timed_print(f"renamed blob column")
 
 
 # store embeddings for vector search
@@ -57,6 +48,19 @@ if index_name not in current_indexes.names():
 # connect to the index
 index = pc.Index(index_name)
 
-# # view the index
+# view the index
 index_stats = index.describe_index_stats()
 timed_print(index_stats)
+
+index_total_vector_count =  index_stats.get("total_vector_count", 0)
+if index_total_vector_count <= 0:
+    batch_size = 100
+    timed_print(f"index has no vectors, upserting {dataset.documents.shape[0]} documents in batches of {batch_size}")
+    for i, batch in enumerate(dataset.iter_documents(batch_size=batch_size)):
+        timed_print(f"upserting batch {i + 1}")
+        index.upsert(batch)
+        timed_print(f"upserted batch {i + 1}\n")
+
+    timed_print("finished upserting documents into index")
+else:
+    timed_print(f"index {index_name!r} contains {index_total_vector_count}")
