@@ -81,17 +81,73 @@ query = (
     "I only have pairs of related sentences?"
 )
 
-timed_print("creating openai embedding")
-res = openai.Embedding.create(
-    input=[query],
-    engine=embed_model,
-)
-timed_print(f"created openai embedding: {res}")
+token_limit = 3750
 
-# retrieve from pinecone
-xq = res["data"][0]["embedding"]
+def retrieve(query: str):
+    timed_print("creating openai embedding")
+    res = openai.Embedding.create(
+        input=[query],
+        engine=embed_model,
+    )
+    timed_print(f"created openai embedding")
 
-# get the relevant contexts (including the questions)
-res = index.query(vector=xq, top_k=2, include_metadata=True)
+    # retrieve from pinecone
+    xq = res["data"][0]["embedding"]
 
-timed_print(f"contexts relevant to query: {res}")
+    # get the relevant contexts
+    contexts = []
+    time_waited = 0
+    time_to_wait = 1 * 60
+    min_num_contexts = 3
+    while (len(contexts) < min_num_contexts and time_waited < time_to_wait):
+        timed_print("querying vector in pinecone index")
+        res = index.query(vector=xq, top_k=2, include_metadata=True)
+        timed_print("queried vector in pinecone index")
+
+        contexts.extend([
+            x["metadata"]["text"] for x in res["matches"]
+        ])
+        timed_print(f"Retrieved {len(contexts)} contexts from index, sleeping for 15 seconds...")
+        time.sleep(15)
+        time_waited += 15
+
+    if time_waited >= time_to_wait and len(contexts) == 0:
+        timed_print("Timed out when retrieving contexts")
+        contexts.append("No contexts retrieved. Try to answer the question yourself!")
+
+    # include the retrieved contexts in the prompt
+    prompt_start = (
+        "Answer the question based on the context below.\n\n"
+        "Context:\n"
+    )
+    prompt_end = (
+        f"\n\nQuestion: {query}\nAnswer:"
+    )
+
+    # append contexts until we hit the character limit
+    for i in range(len(contexts)):
+        joined_contexts = "\n\n---\n\n".join(contexts[:i+1])
+        if len(joined_contexts) >= token_limit:
+            # only join up to the previous context
+            joined_contexts = "\n\n---\n\n".join(contexts[:i])
+            prompt = (
+                prompt_start +
+                f"\n\n{joined_contexts}\n\n" +
+                prompt_end
+            )
+            break
+        elif i == len(contexts) - 1:
+            # this is the last context, so we create the prompt at this point
+            joined_contexts = "\n\n---\n\n".join(contexts)
+            prompt = (
+                prompt_start +
+                f"\n\n{joined_contexts}\n\n" +
+                prompt_end
+            )
+
+    return prompt
+
+
+timed_print(f"initial query: {query}\n\n")
+timed_print(f"full query: {retrieve(query)}")
+
