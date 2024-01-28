@@ -1,8 +1,11 @@
+import openai
+import time
 import os
 import datetime
 from pinecone import Pinecone, PodSpec
 from dotenv import load_dotenv
 from pinecone_datasets import Dataset
+
 
 def get_current_timestamp():
     return datetime.datetime.now(tz=datetime.timezone.utc).strftime("%H:%M:%S")
@@ -21,6 +24,7 @@ load_dotenv()
 
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 pinecone_environment = os.getenv("PINECONE_ENVIRONMENT")
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
 timed_print(f"loading youtube transcripts dataset")
@@ -56,11 +60,38 @@ index_total_vector_count =  index_stats.get("total_vector_count", 0)
 if index_total_vector_count <= 0:
     batch_size = 100
     timed_print(f"index has no vectors, upserting {dataset.documents.shape[0]} documents in batches of {batch_size}")
+    start_timestamp = get_current_timestamp()
     for i, batch in enumerate(dataset.iter_documents(batch_size=batch_size)):
         timed_print(f"upserting batch {i + 1}")
         index.upsert(batch)
         timed_print(f"upserted batch {i + 1}\n")
 
-    timed_print("finished upserting documents into index")
+    end_timestamp = get_current_timestamp()
+    timed_print(f"started upserting documents into index at {start_timestamp}")
+    timed_print(f"finished upserting documents into index at {end_timestamp}")
 else:
     timed_print(f"index {index_name!r} contains {index_total_vector_count}")
+
+# retrieval
+openai.api_key = openai_api_key
+embed_model = "text-embedding-ada-002"
+
+query = (
+    "Which training method should I use for sentence transformers when " +
+    "I only have pairs of related sentences?"
+)
+
+timed_print("creating openai embedding")
+res = openai.Embedding.create(
+    input=[query],
+    engine=embed_model,
+)
+timed_print(f"created openai embedding: {res}")
+
+# retrieve from pinecone
+xq = res["data"][0]["embedding"]
+
+# get the relevant contexts (including the questions)
+res = index.query(vector=xq, top_k=2, include_metadata=True)
+
+timed_print(f"contexts relevant to query: {res}")
