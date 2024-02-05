@@ -148,6 +148,25 @@ def retrieve(query: str):
     return prompt
 
 
-timed_print(f"initial query: {query}\n\n")
-timed_print(f"full query: {retrieve(query)}")
+def complete(prompt: str):
+    # instructions
+    sys_prompt = "You are a helpful assistant that always answers questions."
+    # query text-davinci-003
+    res = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-0613",
+        messages=[
+            {
+                "role": "system",
+                "content": sys_prompt,
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        temperature=0,
+    )
 
+    return res["choices"][0]["message"]["content"].strip()
+
+timed_print(f"\n\n{complete(retrieve(query=query))}")
