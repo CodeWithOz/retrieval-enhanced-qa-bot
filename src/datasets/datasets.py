@@ -101,12 +101,13 @@ def retrieve(query: str):
     min_num_contexts = 3
     while (len(contexts) < min_num_contexts and time_waited < time_to_wait):
         timed_print("querying vector in pinecone index")
-        res = index.query(vector=xq, top_k=2, include_metadata=True)
+        res = index.query(vector=xq, top_k=min_num_contexts, include_metadata=True)
         timed_print("queried vector in pinecone index")
 
         contexts.extend([
             x["metadata"]["text"] for x in res["matches"]
         ])
+        timed_print(f"scores of retrieved contexts: {[x['score'] for x in res['matches']]}")
         timed_print(f"Retrieved {len(contexts)} contexts from index, sleeping for 15 seconds...")
         time.sleep(15)
         time_waited += 15
@@ -151,6 +152,7 @@ def retrieve(query: str):
 def complete(prompt: str):
     # instructions
     sys_prompt = "You are a helpful assistant that always answers questions."
+    timed_print(f"\n\nprompt:\n{prompt}\n\n")
     # query text-davinci-003
     res = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-0613",
