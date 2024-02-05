@@ -1,3 +1,6 @@
 .venv/
 .env
 src/datasets/youtube-transcripts/documents/*.parquet
+src/datasets/youtube-transcripts/queries/*.parquet
+src/datasets/quora-bm25-dataset/documents/*.parquet
+src/datasets/quora-bm25-dataset/queries/*.parquet

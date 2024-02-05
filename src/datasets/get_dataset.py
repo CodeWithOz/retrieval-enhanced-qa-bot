@@ -1,7 +1,5 @@
 import os
 import datetime
-from time import time
-from pinecone import Pinecone, PodSpec
 from dotenv import load_dotenv
 from pinecone_datasets import load_dataset
 
@@ -20,9 +18,9 @@ def timed_print(msg: str):
 load_dotenv()
 
 
-timed_print(f"loading youtube transcripts dataset")
-dataset = load_dataset("youtube-transcripts-text-embedding-ada-002")
-timed_print(f"loaded youtube transcripts dataset")
+timed_print(f"loading quora bm25 dataset")
+dataset = load_dataset("quora_all-MiniLM-L6-bm25-100K")
+timed_print(f"loaded quora bm25 dataset")
 
 timed_print(f"dropping metadata column")
 dataset.documents.drop(["metadata"], axis=1, inplace=True)
@@ -32,7 +30,7 @@ dataset.documents.rename(columns={"blob": "metadata"}, inplace=True)
 timed_print(f"renamed blob column")
 
 # save the dataset locally
-file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "youtube-transcripts")
+file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "quora-bm25-dataset")
 timed_print(f"saving dataset locally")
 dataset.to_path(file_path)
 timed_print(f"saved dataset locally")
