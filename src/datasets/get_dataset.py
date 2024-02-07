@@ -3,6 +3,7 @@ import datetime
 from dotenv import load_dotenv
 from pinecone_datasets import load_dataset
 
+
 def get_current_timestamp():
     return datetime.datetime.now(tz=datetime.timezone.utc).strftime("%H:%M:%S")
 
@@ -30,7 +31,9 @@ dataset.documents.rename(columns={"blob": "metadata"}, inplace=True)
 timed_print(f"renamed blob column")
 
 # save the dataset locally
-file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wikipedia-dataset")
+file_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "wikipedia-dataset"
+)
 timed_print(f"saving dataset locally")
 dataset.to_path(file_path)
 timed_print(f"saved dataset locally")
