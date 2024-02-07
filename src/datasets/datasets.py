@@ -106,10 +106,7 @@ else:
 openai.api_key = openai_api_key
 embed_model = "text-embedding-ada-002"
 
-query = (
-    "Which training method should I use for sentence transformers when "
-    + "I only have pairs of related sentences?"
-)
+query = "What is brekete family " + "and who are its key owners and personalities?"
 
 token_limit = 3750
 
