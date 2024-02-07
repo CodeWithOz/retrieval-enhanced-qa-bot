@@ -27,10 +27,10 @@ pinecone_environment = os.getenv("PINECONE_ENVIRONMENT")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
-timed_print(f"loading youtube transcripts dataset")
-file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "youtube-transcripts")
+timed_print(f"loading wikipedia dataset")
+file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wikipedia-dataset")
 dataset = Dataset.from_path(file_path)
-timed_print(f"loaded youtube transcripts dataset")
+timed_print(f"loaded wikipedia dataset")
 
 
 # store embeddings for vector search
