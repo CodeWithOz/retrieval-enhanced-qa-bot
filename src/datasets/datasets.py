@@ -59,13 +59,13 @@ index_stats = index.describe_index_stats()
 timed_print(index_stats)
 
 index_total_vector_count = index_stats.get("total_vector_count", 0)
-if index_total_vector_count <= dataset.documents.shape[0]:
+if index_total_vector_count < dataset.documents.shape[0]:
     batch_size = 100
     timed_print(
         f"index has no vectors, upserting {dataset.documents.shape[0]} documents in batches of {batch_size}"
     )
     start_timestamp = get_current_timestamp()
-    last_batch = int((index_stats.get("index_fullness", 0.0) * batch_size) + 1)
+    last_batch = int((index_total_vector_count / batch_size) + 1)
     for i, batch in enumerate(dataset.iter_documents(batch_size=batch_size)):
         if i + 1 < last_batch:
             continue
