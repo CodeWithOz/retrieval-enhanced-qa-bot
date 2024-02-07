@@ -56,14 +56,36 @@ index = pc.Index(index_name)
 index_stats = index.describe_index_stats()
 timed_print(index_stats)
 
-index_total_vector_count =  index_stats.get("total_vector_count", 0)
-if index_total_vector_count <= 0:
+index_total_vector_count = index_stats.get("total_vector_count", 0)
+if index_total_vector_count <= dataset.documents.shape[0]:
     batch_size = 100
     timed_print(f"index has no vectors, upserting {dataset.documents.shape[0]} documents in batches of {batch_size}")
     start_timestamp = get_current_timestamp()
+    last_batch = int((index_stats.get("index_fullness", 0.0) * batch_size) + 1)
     for i, batch in enumerate(dataset.iter_documents(batch_size=batch_size)):
+        if i+1 < last_batch:
+            continue
         timed_print(f"upserting batch {i + 1}")
-        index.upsert(batch)
+        try:
+            index.upsert(batch)
+        except Exception as e:
+            timed_print(f"Error during upsert:\n{str(e)}")
+            if i+1 == last_batch:
+                # the same batch failed, stop now
+                raise e
+            # wait a bit then try again
+            timed_print(f"waiting for 10 seconds before re-attempting upsert of batch {i + 1}")
+            time.sleep(10)
+            timed_print(f"re-attempting upsert of batch {i + 1}")
+            try:
+                index.upsert(batch)
+            except Exception as e:
+                timed_print(f"Error during first re-attempted upsert:\n{str(e)}")
+                timed_print(f"waiting for another 10 seconds before re-attempting upsert of batch {i + 1} one more time")
+                time.sleep(10)
+                timed_print(f"re-attempting upsert of batch {i + 1} one more time")
+                index.upsert(batch)
+        last_batch = i + 1
         timed_print(f"upserted batch {i + 1}\n")
 
     end_timestamp = get_current_timestamp()
